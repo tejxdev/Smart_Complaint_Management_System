@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Smart Complaint Management</title>
+  <style>
+    :root { color-scheme: light; font-family: Inter, "Segoe UI", Arial, sans-serif; color: #172b24; background: #f3f7f4; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-width: 320px; }
+    header { padding: 24px max(24px, calc((100% - 1080px) / 2)); color: white; background: #143d2b; }
+    header .brand { font-size: 14px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: #bce5c9; }
+    header h1 { margin: 18px 0 8px; font-size: clamp(28px, 5vw, 44px); }
+    header p { margin: 0; color: #d6e8dc; }
+    main { width: min(100% - 32px, 1180px); margin: 24px auto 56px; }
+    .status { display: flex; align-items: center; gap: 12px; padding: 15px 18px; margin-bottom: 20px; background: white; border: 1px solid #dce8df; border-radius: 12px; box-shadow: 0 5px 18px #163d2b0b; }
+    .dot { width: 11px; height: 11px; flex: 0 0 auto; border-radius: 50%; background: #d39328; }
+    .dot.ok { background: #24a15b; }
+    .dot.error { background: #d94b45; }
+    .layout { display: grid; grid-template-columns: minmax(280px, .8fr) minmax(0, 1.2fr); gap: 20px; align-items: start; }
+    .card { padding: 24px; background: white; border: 1px solid #dce8df; border-radius: 14px; box-shadow: 0 5px 18px #163d2b0b; }
+    h2 { margin: 0 0 8px; font-size: 21px; }
+    .muted { color: #62736a; font-size: 14px; line-height: 1.5; }
+    .tabs { display: flex; gap: 8px; margin: 18px 0; padding: 4px; background: #f0f5f1; border-radius: 9px; }
+    button, input, textarea { font: inherit; }
+    .tabs button { flex: 1; padding: 9px; border: 0; border-radius: 7px; background: transparent; color: #53675a; cursor: pointer; }
+    .tabs button.active { background: white; color: #17613a; box-shadow: 0 1px 5px #19332118; font-weight: 700; }
+    label { display: block; margin: 14px 0 6px; font-size: 13px; font-weight: 650; }
+    input, textarea { display: block; width: 100%; padding: 11px 12px; border: 1px solid #ccd9cf; border-radius: 8px; outline: none; }
+    input:focus, textarea:focus { border-color: #2b8a53; box-shadow: 0 0 0 3px #2b8a531a; }
+    textarea { min-height: 100px; resize: vertical; }
+    .primary { width: 100%; margin-top: 17px; padding: 12px 16px; border: 0; border-radius: 8px; color: white; background: #17613a; font-weight: 700; cursor: pointer; }
+    .primary:hover { background: #104c2c; }
+    button:disabled { opacity: .6; cursor: wait; }
+    .message { min-height: 20px; margin: 12px 0 0; font-size: 14px; }
+    .message.error { color: #b42318; }
+    .message.success { color: #17613a; }
+    .hidden { display: none !important; }
+    .signed-in { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px; margin: 18px 0; border-radius: 8px; background: #eff7f1; font-size: 14px; }
+    .text-button { border: 0; background: transparent; color: #17613a; font-weight: 700; cursor: pointer; }
+    .complaint-form { padding-top: 20px; margin-top: 20px; border-top: 1px solid #e5ece6; }
+    .list-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .refresh { padding: 8px 12px; border: 1px solid #cbd9cf; border-radius: 8px; background: white; color: #17613a; font-weight: 650; cursor: pointer; }
+    .complaints { display: grid; gap: 12px; margin-top: 18px; }
+    .complaint { padding: 15px; border: 1px solid #e0e9e2; border-radius: 10px; }
+    .complaint h3 { margin: 0 0 7px; font-size: 16px; }
+    .complaint p { margin: 0; color: #53675a; font-size: 14px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .complaint-meta { display: flex; justify-content: space-between; gap: 10px; margin-top: 12px; color: #708077; font-size: 12px; }
+    .badge { color: #17613a; font-weight: 700; }
+    .empty { padding: 26px 12px; text-align: center; color: #718078; background: #f7faf7; border-radius: 10px; }
+    .admin-panel { margin-top: 20px; }
+    .admin-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .admin-tabs { display: flex; gap: 8px; margin: 18px 0; border-bottom: 1px solid #e5ece6; }
+    .admin-tabs button { padding: 10px 14px; border: 0; border-bottom: 2px solid transparent; color: #53675a; background: transparent; cursor: pointer; }
+    .admin-tabs button.active { color: #17613a; border-bottom-color: #17613a; font-weight: 700; }
+    .admin-toolbar { display: flex; gap: 10px; margin: 16px 0; }
+    .admin-toolbar input { flex: 1; min-width: 120px; }
+    .admin-toolbar select, .admin-table select { padding: 9px; border: 1px solid #ccd9cf; border-radius: 7px; background: white; color: #172b24; }
+    .admin-toolbar .refresh { flex: 0 0 auto; }
+    .table-wrap { overflow-x: auto; }
+    .admin-table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+    .admin-table th, .admin-table td { padding: 12px 10px; border-bottom: 1px solid #e8eee9; vertical-align: top; }
+    .admin-table th { color: #62736a; font-size: 12px; white-space: nowrap; }
+    .admin-table td { overflow-wrap: anywhere; }
+    .admin-table .row-actions { display: flex; flex-wrap: wrap; gap: 7px; min-width: 180px; }
+    .small-button { padding: 7px 10px; border: 1px solid #cbd9cf; border-radius: 7px; background: white; color: #17613a; font-weight: 650; cursor: pointer; }
+    .small-button.danger { border-color: #f1c9c5; color: #a52820; }
+    .active-label { color: #17613a; font-weight: 650; }
+    .inactive-label { color: #a52820; font-weight: 650; }
+    .admin-message { min-height: 20px; margin: 12px 0 0; font-size: 14px; }
+    .admin-message.error { color: #b42318; }
+    .admin-message.success { color: #17613a; }
+    .complaint-summary { display: block; max-width: 280px; color: #62736a; margin-top: 4px; line-height: 1.4; }
+    .audit-details { max-width: 360px; margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; font-family: inherit; font-size: 12px; color: #53675a; }
+    footer { padding: 22px; text-align: center; color: #718078; font-size: 13px; }
+    @media (max-width: 720px) { .layout { grid-template-columns: 1fr; } .card { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">Smart Complaint Management</div>
+    <h1>Your concerns, tracked.</h1>
+    <p>Submit a complaint and follow its progress in one place.</p>
+  </header>
+  <main>
+    <div class="status" role="status" aria-live="polite">
+      <span class="dot" id="health-dot"></span>
+      <span id="health-text">Checking server and database...</span>
+    </div>
+    <div class="layout">
+      <section class="card">
+        <div id="auth-panel">
+          <h2 id="auth-title">Welcome back</h2>
+          <p class="muted">Log in to submit and track your complaints.</p>
+          <div class="tabs" aria-label="Account action">
+            <button type="button" class="active" id="login-tab">Log in</button>
+            <button type="button" id="register-tab">Create account</button>
+          </div>
+          <form id="auth-form">
+            <div id="name-field" class="hidden">
+              <label for="name">Your name</label>
+              <input id="name" name="name" autocomplete="name" minlength="2">
+            </div>
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+            <label for="password">Password</label>
+            <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+            <button class="primary" id="auth-submit" type="submit">Log in</button>
+          </form>
+          <p class="message" id="auth-message" aria-live="polite"></p>
+        </div>
+        <div id="account-panel" class="hidden">
+          <h2>You’re signed in</h2>
+          <div class="signed-in"><span id="account-email"></span><button class="text-button" id="logout" type="button">Log out</button></div>
+          <div class="complaint-form">
+            <h2>Submit a complaint</h2>
+            <p class="muted">Tell us what happened. You can check its status here.</p>
+            <form id="complaint-form">
+              <label for="title">Complaint title</label>
+              <input id="title" name="title" required minlength="3" maxlength="150" placeholder="e.g. Internet is not working">
+              <label for="description">Details</label>
+              <textarea id="description" name="description" required minlength="10" placeholder="Describe the issue and when it started..."></textarea>
+              <button class="primary" id="complaint-submit" type="submit">Submit complaint</button>
+            </form>
+            <p class="message" id="complaint-message" aria-live="polite"></p>
+          </div>
+        </div>
+      </section>
+      <section class="card">
+        <div class="list-head">
+          <div><h2>Your complaints</h2><p class="muted">Sign in to see the latest updates.</p></div>
+          <button class="refresh hidden" id="refresh" type="button">Refresh</button>
+        </div>
+        <div class="complaints" id="complaints"><div class="empty">Log in to see your complaints.</div></div>
+      </section>
+    </div>
+    <section class="card admin-panel hidden" id="admin-panel">
+      <div class="admin-heading">
+        <div>
+          <h2>Admin control panel</h2>
+          <p class="muted">Manage complaints, user roles, and account access.</p>
+        </div>
+        <button class="refresh" id="admin-refresh" type="button">Refresh data</button>
+      </div>
+      <div class="admin-tabs" role="tablist" aria-label="Admin sections">
+        <button class="active" id="admin-complaints-tab" type="button" role="tab" aria-selected="true">All complaints</button>
+        <button id="admin-users-tab" type="button" role="tab" aria-selected="false">User accounts</button>
+        <button id="admin-audit-tab" type="button" role="tab" aria-selected="false">Activity history</button>
+      </div>
+      <section id="admin-complaints-section">
+        <form class="admin-toolbar" id="admin-complaint-filters">
+          <input id="admin-complaint-search" aria-label="Search all complaints" placeholder="Search complaint, name, or email">
+          <select id="admin-status-filter" aria-label="Filter complaint status">
+            <option value="">All statuses</option>
+            <option>Pending</option>
+            <option>In Progress</option>
+            <option>Resolved</option>
+          </select>
+          <button class="refresh" type="submit">Search</button>
+        </form>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Complaint</th><th>Submitted by</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="admin-complaints-body"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="admin-complaints-empty">No matching complaints.</div>
+      </section>
+      <section id="admin-users-section" class="hidden">
+        <form class="admin-toolbar" id="admin-user-filters">
+          <input id="admin-user-search" aria-label="Search users" placeholder="Search user name or email">
+          <button class="refresh" type="submit">Search</button>
+        </form>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Account</th><th>Actions</th></tr></thead>
+            <tbody id="admin-users-body"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="admin-users-empty">No matching accounts.</div>
+      </section>
+      <section id="admin-audit-section" class="hidden">
+        <form class="admin-toolbar" id="admin-audit-filters">
+          <input id="admin-audit-search" aria-label="Search activity history" placeholder="Search admin, action, or record type">
+          <button class="refresh" type="submit">Search</button>
+        </form>
+        <p class="muted" id="admin-audit-count"></p>
+        <div class="table-wrap">
+          <table class="admin-table">
+            <thead><tr><th>Date and time</th><th>Admin</th><th>Action</th><th>Record</th><th>Change details</th></tr></thead>
+            <tbody id="admin-audit-body"></tbody>
+          </table>
+        </div>
+        <div class="empty hidden" id="admin-audit-empty">No activity history found.</div>
+        <button class="refresh hidden" id="admin-audit-more" type="button">Load older activity</button>
+      </section>
+      <p class="admin-message" id="admin-message" aria-live="polite"></p>
+    </section>
+  </main>
+  <footer>Smart Complaint Management System</footer>
+  <script>
+    const $ = (selector) => document.querySelector(selector);
+    const tokenKey = "complaint-management-token";
+    let mode = "login";
+    let auditOffset = 0;
+
+    async function api(url, options = {}) {
+      const headers = { ...(options.body ? { "Content-Type": "application/json" } : {}) };
+      const token = localStorage.getItem(tokenKey);
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const response = await fetch(url, { ...options, headers: { ...headers, ...options.headers } });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(data.message || `Request failed (${response.status})`);
+      return data;
+    }
+
+    function showMessage(element, message, kind = "") {
+      element.textContent = message;
+      element.className = `message ${kind}`;
+    }
+
+    function setMode(nextMode) {
+      mode = nextMode;
+      const registering = mode === "register";
+      $("#login-tab").classList.toggle("active", !registering);
+      $("#register-tab").classList.toggle("active", registering);
+      $("#name-field").classList.toggle("hidden", !registering);
+      $("#name").required = registering;
+      $("#auth-title").textContent = registering ? "Create your account" : "Welcome back";
+      $("#auth-submit").textContent = registering ? "Create account" : "Log in";
+      $("#password").autocomplete = registering ? "new-password" : "current-password";
+      showMessage($("#auth-message"), "");
+    }
+
+    function updateAccount() {
+      const loggedIn = Boolean(localStorage.getItem(tokenKey));
+      const isAdmin = loggedIn && localStorage.getItem("complaint-management-role") === "admin";
+      $("#auth-panel").classList.toggle("hidden", loggedIn);
+      $("#account-panel").classList.toggle("hidden", !loggedIn);
+      $("#refresh").classList.toggle("hidden", !loggedIn);
+      $("#admin-panel").classList.toggle("hidden", !isAdmin);
+      if (loggedIn) $("#account-email").textContent = localStorage.getItem("complaint-management-email") || "Signed in";
+      else {
+        $("#complaints").innerHTML = '<div class="empty">Log in to see your complaints.</div>';
+        $("#admin-complaints-body").replaceChildren();
+        $("#admin-users-body").replaceChildren();
+      }
+    }
+
+    async function checkHealth() {
+      const dot = $("#health-dot");
+      const text = $("#health-text");
+      try {
+        const result = await api("/api/health");
+        dot.className = "dot ok";
+        text.textContent = result.database === "connected" ? "All systems operational — database connected" : "Server is running";
+      } catch {
+        dot.className = "dot error";
+        text.textContent = "Could not reach the server. Please refresh the page or try again later.";
+      }
+    }
+
+    async function loadComplaints() {
+      const container = $("#complaints");
+      container.innerHTML = '<div class="empty">Loading your complaints...</div>';
+      try {
+        const result = await api("/api/complaints");
+        container.replaceChildren();
+        if (!result.complaints.length) {
+          container.innerHTML = '<div class="empty">No complaints yet. Submit one and it will appear here.</div>';
+          return;
+        }
+        for (const item of result.complaints) {
+          const card = document.createElement("article");
+          card.className = "complaint";
+          const title = document.createElement("h3");
+          title.textContent = item.title;
+          const description = document.createElement("p");
+          description.textContent = item.description;
+          const meta = document.createElement("div");
+          meta.className = "complaint-meta";
+          const status = document.createElement("span");
+          status.className = "badge";
+          status.textContent = item.status;
+          const date = document.createElement("time");
+          date.textContent = item.created_at ? new Date(item.created_at).toLocaleDateString() : "";
+          meta.append(status, date);
+          card.append(title, description, meta);
+          container.append(card);
+        }
+      } catch (error) {
+        container.innerHTML = "";
+        const message = document.createElement("div");
+        message.className = "empty";
+        message.textContent = error.message;
+        container.append(message);
+        if (error.message.toLowerCase().includes("token")) logout();
+      }
+    }
+
+    function showAdminMessage(message, kind = "") {
+      $("#admin-message").textContent = message;
+      $("#admin-message").className = `admin-message ${kind}`;
+    }
+
+    function makeCell(text, className = "") {
+      const cell = document.createElement("td");
+      cell.textContent = text;
+      if (className) cell.className = className;
+      return cell;
+    }
+
+    async function loadAdminComplaints() {
+      const body = $("#admin-complaints-body");
+      $("#admin-complaints-empty").classList.add("hidden");
+      const params = new URLSearchParams();
+      const search = $("#admin-complaint-search").value.trim();
+      const status = $("#admin-status-filter").value;
+      if (search) params.set("search", search);
+      if (status) params.set("status", status);
+      try {
+        const result = await api(`/api/admin/complaints?${params}`);
+        body.replaceChildren();
+        $("#admin-complaints-empty").classList.toggle("hidden", result.complaints.length > 0);
+        for (const complaint of result.complaints) {
+          const row = document.createElement("tr");
+          const summary = document.createElement("small");
+          summary.className = "complaint-summary";
+          summary.textContent = complaint.description;
+          const title = document.createElement("strong");
+          title.textContent = complaint.title;
+          const titleCell = document.createElement("td");
+          titleCell.append(title, summary);
+          row.append(titleCell, makeCell(`${complaint.user_name} (${complaint.user_email})`));
+
+          const statusCell = document.createElement("td");
+          const statusSelect = document.createElement("select");
+          statusSelect.setAttribute("aria-label", `Status for complaint ${complaint.id}`);
+          for (const value of ["Pending", "In Progress", "Resolved"]) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value;
+            option.selected = complaint.status === value;
+            statusSelect.append(option);
+          }
+          statusCell.append(statusSelect);
+          row.append(statusCell);
+
+          const actions = document.createElement("td");
+          actions.className = "row-actions";
+          const save = document.createElement("button");
+          save.type = "button";
+          save.className = "small-button";
+          save.textContent = "Save status";
+          save.addEventListener("click", async () => {
+            save.disabled = true;
+            try {
+              await api(`/api/admin/complaints/${complaint.id}/status`, {
+                method: "PATCH",
+                body: JSON.stringify({ status: statusSelect.value })
+              });
+              showAdminMessage(`Complaint #${complaint.id} status updated.`, "success");
+              await Promise.all([loadAdminComplaints(), loadComplaints(), loadAdminAuditLogs()]);
+            } catch (error) {
+              showAdminMessage(error.message, "error");
+            } finally {
+              save.disabled = false;
+            }
+          });
+          const remove = document.createElement("button");
+          remove.type = "button";
+          remove.className = "small-button danger";
+          remove.textContent = "Delete";
+          remove.addEventListener("click", async () => {
+            if (!window.confirm(`Permanently delete complaint "${complaint.title}"?`)) return;
+            remove.disabled = true;
+            try {
+              await api(`/api/admin/complaints/${complaint.id}`, { method: "DELETE" });
+              showAdminMessage(`Complaint #${complaint.id} deleted.`, "success");
+              await Promise.all([loadAdminComplaints(), loadComplaints(), loadAdminAuditLogs()]);
+            } catch (error) {
+              showAdminMessage(error.message, "error");
+            } finally {
+              remove.disabled = false;
+            }
+          });
+          actions.append(save, remove);
+          row.append(actions);
+          body.append(row);
+        }
+      } catch (error) {
+        showAdminMessage(error.message, "error");
+      }
+    }
+
+    async function loadAdminUsers() {
+      const body = $("#admin-users-body");
+      $("#admin-users-empty").classList.add("hidden");
+      const params = new URLSearchParams();
+      const search = $("#admin-user-search").value.trim();
+      if (search) params.set("search", search);
+      try {
+        const result = await api(`/api/admin/users?${params}`);
+        body.replaceChildren();
+        $("#admin-users-empty").classList.toggle("hidden", result.users.length > 0);
+        const currentUserId = Number(localStorage.getItem("complaint-management-user-id"));
+        for (const user of result.users) {
+          const row = document.createElement("tr");
+          row.append(makeCell(user.name), makeCell(user.email));
+
+          const roleCell = document.createElement("td");
+          const roleSelect = document.createElement("select");
+          roleSelect.setAttribute("aria-label", `Role for ${user.email}`);
+          for (const value of ["user", "admin"]) {
+            const option = document.createElement("option");
+            option.value = value;
+            option.textContent = value === "admin" ? "Admin" : "User";
+            option.selected = user.role === value;
+            roleSelect.append(option);
+          }
+          roleCell.append(roleSelect);
+          row.append(roleCell);
+
+          const activeCell = document.createElement("td");
+          const activeLabel = document.createElement("span");
+          activeLabel.className = user.is_active ? "active-label" : "inactive-label";
+          activeLabel.textContent = user.is_active ? "Active" : "Deactivated";
+          activeCell.append(activeLabel);
+          row.append(activeCell);
+
+          const actions = document.createElement("td");
+          actions.className = "row-actions";
+          const saveRole = document.createElement("button");
+          saveRole.type = "button";
+          saveRole.className = "small-button";
+          saveRole.textContent = "Save role";
+          saveRole.addEventListener("click", async () => {
+            saveRole.disabled = true;
+            try {
+              await api(`/api/admin/users/${user.id}/role`, {
+                method: "PATCH",
+                body: JSON.stringify({ role: roleSelect.value })
+              });
+              showAdminMessage(`Role updated for ${user.email}.`, "success");
+              await Promise.all([loadAdminUsers(), loadAdminAuditLogs()]);
+            } catch (error) {
+              showAdminMessage(error.message, "error");
+            } finally {
+              saveRole.disabled = false;
+            }
+          });
+          const toggleActive = document.createElement("button");
+          toggleActive.type = "button";
+          toggleActive.className = `small-button${user.is_active ? " danger" : ""}`;
+          toggleActive.textContent = user.is_active ? "Deactivate" : "Reactivate";
+          toggleActive.disabled = user.id === currentUserId;
+          toggleActive.title = user.id === currentUserId ? "You cannot deactivate your own account." : "";
+          toggleActive.addEventListener("click", async () => {
+            const nextActive = !Boolean(user.is_active);
+            const action = nextActive ? "reactivate" : "deactivate";
+            if (!window.confirm(`Are you sure you want to ${action} ${user.email}?`)) return;
+            toggleActive.disabled = true;
+            try {
+              await api(`/api/admin/users/${user.id}/active`, {
+                method: "PATCH",
+                body: JSON.stringify({ active: nextActive })
+              });
+              showAdminMessage(`Account ${user.email} ${nextActive ? "reactivated" : "deactivated"}.`, "success");
+              await Promise.all([loadAdminUsers(), loadAdminAuditLogs()]);
+            } catch (error) {
+              showAdminMessage(error.message, "error");
+            } finally {
+              toggleActive.disabled = false;
+            }
+          });
+          actions.append(saveRole, toggleActive);
+          row.append(actions);
+          body.append(row);
+        }
+      } catch (error) {
+        showAdminMessage(error.message, "error");
+      }
+    }
+
+    function setAdminSection(section) {
+      const showUsers = section === "users";
+      const showAudit = section === "audit";
+      $("#admin-complaints-section").classList.toggle("hidden", showUsers);
+      $("#admin-users-section").classList.toggle("hidden", !showUsers);
+      $("#admin-audit-section").classList.toggle("hidden", !showAudit);
+      $("#admin-complaints-tab").classList.toggle("active", !showUsers && !showAudit);
+      $("#admin-users-tab").classList.toggle("active", showUsers);
+      $("#admin-audit-tab").classList.toggle("active", showAudit);
+      $("#admin-complaints-tab").setAttribute("aria-selected", String(!showUsers && !showAudit));
+      $("#admin-users-tab").setAttribute("aria-selected", String(showUsers));
+      $("#admin-audit-tab").setAttribute("aria-selected", String(showAudit));
+      showAdminMessage("");
+      if (showUsers) loadAdminUsers();
+      else if (section === "audit") {
+        auditOffset = 0;
+        loadAdminAuditLogs();
+      } else loadAdminComplaints();
+    }
+
+    async function loadAdminAuditLogs(append = false) {
+      const body = $("#admin-audit-body");
+      const limit = 50;
+      if (!append) auditOffset = 0;
+      const params = new URLSearchParams({
+        limit: String(limit),
+        offset: String(auditOffset)
+      });
+      const search = $("#admin-audit-search").value.trim();
+      if (search) params.set("search", search);
+      $("#admin-audit-empty").classList.add("hidden");
+      try {
+        const result = await api(`/api/admin/audit-logs?${params}`);
+        if (!append) body.replaceChildren();
+        for (const entry of result.logs) {
+          const row = document.createElement("tr");
+          const date = document.createElement("time");
+          date.dateTime = new Date(entry.created_at).toISOString();
+          date.textContent = new Date(entry.created_at).toLocaleString();
+          row.append(makeCell(date.textContent));
+          row.append(makeCell(entry.admin_email));
+          row.append(makeCell(entry.action.replaceAll(".", " ")));
+          row.append(makeCell(`${entry.entity_type} #${entry.entity_id}`));
+          const details = document.createElement("pre");
+          details.className = "audit-details";
+          details.textContent = JSON.stringify(entry.details, null, 2);
+          const detailsCell = document.createElement("td");
+          detailsCell.append(details);
+          row.append(detailsCell);
+          body.append(row);
+        }
+        const displayed = append ? auditOffset + result.count : result.count;
+        auditOffset = displayed;
+        $("#admin-audit-count").textContent = `${result.total} recorded admin actions`;
+        $("#admin-audit-empty").classList.toggle("hidden", result.total > 0);
+        $("#admin-audit-more").classList.toggle("hidden", displayed >= result.total);
+      } catch (error) {
+        showAdminMessage(error.message, "error");
+      }
+    }
+
+    async function refreshAdminPanel() {
+      showAdminMessage("Loading admin data...");
+      auditOffset = 0;
+      await Promise.all([loadAdminComplaints(), loadAdminUsers(), loadAdminAuditLogs()]);
+      if (!$("#admin-message").classList.contains("error")) showAdminMessage("Admin data refreshed.", "success");
+    }
+
+    $("#login-tab").addEventListener("click", () => setMode("login"));
+    $("#register-tab").addEventListener("click", () => setMode("register"));
+    $("#auth-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const authForm = event.currentTarget;
+      const button = $("#auth-submit");
+      button.disabled = true;
+      showMessage($("#auth-message"), mode === "register" ? "Creating your account..." : "Logging in...");
+      const form = new FormData(authForm);
+      const body = Object.fromEntries(form.entries());
+      try {
+        if (mode === "register") {
+          await api("/api/auth/register", { method: "POST", body: JSON.stringify(body) });
+          setMode("login");
+          $("#email").value = body.email;
+          showMessage($("#auth-message"), "Account created. You can log in now.", "success");
+        } else {
+          const result = await api("/api/auth/login", { method: "POST", body: JSON.stringify(body) });
+          localStorage.setItem(tokenKey, result.token);
+          localStorage.setItem("complaint-management-email", result.user.email);
+          localStorage.setItem("complaint-management-user-id", result.user.id);
+          localStorage.setItem("complaint-management-role", result.user.role);
+          authForm.reset();
+          updateAccount();
+          await loadComplaints();
+          if (result.user.role === "admin") await refreshAdminPanel();
+        }
+      } catch (error) {
+        showMessage($("#auth-message"), error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    $("#complaint-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const complaintForm = event.currentTarget;
+      const button = $("#complaint-submit");
+      button.disabled = true;
+      showMessage($("#complaint-message"), "Submitting complaint...");
+      const body = Object.fromEntries(new FormData(complaintForm).entries());
+      try {
+        await api("/api/complaints", { method: "POST", body: JSON.stringify(body) });
+        complaintForm.reset();
+        showMessage($("#complaint-message"), "Complaint submitted successfully.", "success");
+        await loadComplaints();
+      } catch (error) {
+        showMessage($("#complaint-message"), error.message, "error");
+      } finally {
+        button.disabled = false;
+      }
+    });
+
+    function logout() {
+      localStorage.removeItem(tokenKey);
+      localStorage.removeItem("complaint-management-email");
+      localStorage.removeItem("complaint-management-user-id");
+      localStorage.removeItem("complaint-management-role");
+      updateAccount();
+      showMessage($("#auth-message"), "");
+    }
+    $("#logout").addEventListener("click", logout);
+    $("#refresh").addEventListener("click", loadComplaints);
+    $("#admin-refresh").addEventListener("click", refreshAdminPanel);
+    $("#admin-complaints-tab").addEventListener("click", () => setAdminSection("complaints"));
+    $("#admin-users-tab").addEventListener("click", () => setAdminSection("users"));
+    $("#admin-audit-tab").addEventListener("click", () => setAdminSection("audit"));
+    $("#admin-complaint-filters").addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadAdminComplaints();
+    });
+    $("#admin-user-filters").addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadAdminUsers();
+    });
+    $("#admin-audit-filters").addEventListener("submit", (event) => {
+      event.preventDefault();
+      loadAdminAuditLogs();
+    });
+    $("#admin-audit-more").addEventListener("click", () => loadAdminAuditLogs(true));
+    updateAccount();
+    checkHealth();
+    if (localStorage.getItem(tokenKey)) {
+      loadComplaints();
+      if (localStorage.getItem("complaint-management-role") === "admin") refreshAdminPanel();
+    }
+  </script>
+</body>
+</html>

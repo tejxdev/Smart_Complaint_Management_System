@@ -1,0 +1,100 @@
+{
+  "info": {
+    "name": "Smart Complaint Management API",
+    "description": "Starter requests for the Node.js + MySQL project. Set baseUrl and token variables.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:3000" },
+    { "key": "token", "value": "PASTE_LOGIN_TOKEN_HERE" },
+    { "key": "complaintId", "value": "1" }
+  ],
+  "item": [
+    {
+      "name": "Register",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"name\": \"Test User\",\n  \"email\": \"test@example.com\",\n  \"password\": \"StrongPass123\"\n}" },
+        "url": "{{baseUrl}}/api/auth/register"
+      }
+    },
+    {
+      "name": "Login",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "body": { "mode": "raw", "raw": "{\n  \"email\": \"test@example.com\",\n  \"password\": \"StrongPass123\"\n}" },
+        "url": "{{baseUrl}}/api/auth/login"
+      }
+    },
+    {
+      "name": "Submit Complaint",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Internet issue\",\n  \"description\": \"My internet connection is not working since this morning.\"\n}" },
+        "url": "{{baseUrl}}/api/complaints"
+      }
+    },
+    {
+      "name": "View My Complaints",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/complaints"
+      }
+    },
+    {
+      "name": "Search My Complaints",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/complaints?search=internet"
+      }
+    },
+    {
+      "name": "Filter My Complaints",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/complaints?status=Pending"
+      }
+    },
+    {
+      "name": "Update My Pending Complaint",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"title\": \"Internet connection issue\",\n  \"description\": \"The connection is still not working after restarting my router.\"\n}" },
+        "url": "{{baseUrl}}/api/complaints/{{complaintId}}"
+      }
+    },
+    {
+      "name": "Admin View All Complaints",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{baseUrl}}/api/admin/complaints"
+      }
+    },
+    {
+      "name": "Admin Update Complaint Status",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "body": { "mode": "raw", "raw": "{\n  \"status\": \"In Progress\"\n}" },
+        "url": "{{baseUrl}}/api/admin/complaints/{{complaintId}}/status"
+      }
+    }
+  ]
+}
